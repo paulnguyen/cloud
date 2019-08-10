@@ -12,6 +12,11 @@ public class StarbucksServer extends Application {
         server.getDefaultHost().attach(new StarbucksServer()) ;
         server.start() ;
         StarbucksAPI.startOrderProcessor() ;
+        try { 
+            AdminServer.run() ;
+        } catch ( Exception e ) {
+            System.out.println( e ) ;
+        }
     }
 
     @Override

@@ -6,7 +6,7 @@ import org.restlet.routing.Router;
 
 public class AdminServer extends Application {
 
-    public static void start() throws Exception {
+    public static void run() throws Exception {
         Component server = new Component() ;
         server.getServers().add(Protocol.HTTP, 8080) ;
         server.getDefaultHost().attach(new AdminServer()) ;
