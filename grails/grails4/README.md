@@ -1,16 +1,15 @@
 
 ## Grails Resources
 
-        http://docs.grails.org/latest/
-        http://guides.grails.org/creating-your-first-grails-app/guide/index.html
-        http://guides.grails.org/rest-hibernate/guide/index.html
+       https://docs.grails.org/4.0.0/
+       https://docs.grails.org/4.0.0/api/
 
 ## Docker Deployment
 
         http://docs.grails.org/latest/guide/deployment.html
         https://hub.docker.com/r/library/tomcat/
 
-### Install SDK MAN
+## Install SDK MAN
 
         Follow Instructions Here: http://sdkman.io/
 
@@ -18,22 +17,24 @@
 
         sdk ls groovy
         sdk ls grails
-        sdk install groovy 2.4.7
-        sdk install grails 3.2.5
+        sdk install groovy 2.5.6
+        sdk install grails 4.0.0
         sdk current
 
         grails --version
-        
-        | Grails Version: 3.2.5
-        | Groovy Version: 2.4.7
-        | JVM Version: 1.8.0_112
-        
+  
+		 | Grails Version: 4.0.0
+		 | JVM Version: 1.8.0_181
+		 
+		 groovy --version
+		 
+		 Groovy Version: 2.5.6 JVM: 1.8.0_181 
+		         
 ## Grails Commands
 
     grails --v
     grails list-plugins
     grails list-profiles
-    grails profile-info rest-api
      
     grails run-app
     grails run-app --port=8090
@@ -42,11 +43,7 @@
     grails create-app hellograils
     grails create-app gumball-v1
     grails create-app gumball-v2
-    grails create-app gumball-v3 -profile rest-api
     
-    grails create-app hellorest -profile rest-api
-    grails create-app hellobooks -profile rest-api
-    grails create-app hellogorm -profile rest-api
 
 
     
