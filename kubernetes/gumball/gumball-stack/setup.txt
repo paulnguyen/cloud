@@ -8,6 +8,8 @@ Durable:	no
 > rabbitmqadmin declare queue name=gumball durable=false
 > rabbitmqadmin list queues vhost name node messages 
 
+rabbitmqadmin -u guest -p guest -H localhost -P 15672 list queues name node messages
+
 -- Gumball MongoDB Create Database
 
 Database Name: cmpe281
@@ -24,7 +26,7 @@ show dbs
 db.gumball.insert(
     { 
       Id: 1,
-      CountGumballs: NumberInt(202),
+      CountGumballs: NumberInt(281),
       ModelNumber: 'M102988',
       SerialNumber: '1234998871109' 
     }
