@@ -23,7 +23,7 @@ import (
     "gopkg.in/mgo.v2/bson"
 )
 
-var config = "LOCAL" // LOCAL, K8S, GKE
+var config = "GKE" // LOCAL, K8S, GKE
 
 // MongoDB Config (Local Docker)
 var mongodb_server = ""
@@ -58,14 +58,14 @@ func init() {
 		rabbitmq_user = "guest"
 		rabbitmq_pass = "guest"
     case "GKE":
-    	mongodb_server = "mongodb://root:GvTWo8TRnqdi@10.138.0.9/cmpe281"
+    	mongodb_server = "mongodb://admin:cmpe281@10.138.0.9:27017/cmpe281"
 		mongodb_database = "cmpe281"
 		mongodb_collection = "gumball"
-		rabbitmq_server = "10.81.9.66"
-		rabbitmq_port = "15672"
+		rabbitmq_server = "rabbitmq-rabbitmq-svc"
+		rabbitmq_port = "5672"
 		rabbitmq_queue = "gumball"
 		rabbitmq_user = "rabbit"
-		rabbitmq_pass = "57DfbrYWrh1Z"
+		rabbitmq_pass = "TRiMxUpTscY1"
     }
 }
 
@@ -105,6 +105,14 @@ func failOnError(err error, msg string) {
 // API Ping Handler
 func pingHandler(formatter *render.Render) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		fmt.Println("mongodb_server:", mongodb_server )
+		fmt.Println("mongodb_database:", mongodb_database )
+		fmt.Println("mongodb_collection:", mongodb_collection )
+		fmt.Println("rabbitmq_server:", rabbitmq_server )
+		fmt.Println("rabbitmq_port:", rabbitmq_port )
+		fmt.Println("rabbitmq_queue:", rabbitmq_queue )
+		fmt.Println("rabbitmq_user:", rabbitmq_user )
+		fmt.Println("rabbitmq_pass:", rabbitmq_pass )
 		formatter.JSON(w, http.StatusOK, struct{ Test string }{"API version 1.0 alive!"})
 	}
 }

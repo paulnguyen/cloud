@@ -166,6 +166,14 @@ Collection Name: gumball
 use cmpe281
 show dbs
 
+db.createUser(
+   {
+     user: "admin",
+     pwd: "cmpe281",  
+     roles: [ "readWrite", "dbAdmin" ]
+   }
+) ;
+
 db.gumball.insert(
     { 
       Id: 1,
@@ -180,33 +188,52 @@ db.gumball.insert(
 db.gumball.find( { Id: 1 } ) ;
 
 
+## Create GKE Namespace
+
+kubectl create -f kubernetes-namespace.yaml
+
 
 ## RabbitMQ
 
 -- Install RabbitMQ (From Marketplace)
 
-* https://console.cloud.google.com/marketplace/details/google/rabbitmq
 * https://www.rabbitmq.com/getstarted.html
+* https://console.cloud.google.com/marketplace/details/google/rabbitmq
 * https://github.com/GoogleCloudPlatform/click-to-deploy/blob/master/k8s/rabbitmq/README.md
 
 1. Click "Configure" from Marketplace
 2. Select "cmpe281" Project
 3. Set the following options:
    - GKE Cluster:               cmpe281
-   - GKE Namespace:             default
+   - GKE Namespace:             gumball
    - Instance Name:             rabbitmq
    - # of Replicas:             3
    - Username:                  rabbit
    - RabbitMQ Service Account:  (create new one)
 4. On GKE Applications for RabbitMQ.  Get Admin User's Password.
-   (i.e. Username = rabbit.  Password = 57DfbrYWrh1Z)
+   - Username = rabbit
+   - Password = TRiMxUpTscY1
 5. On GKE Services for RabbitMQ.  Note the Service Name.
    (i.e. RabbitMQ Service Name = rabbitmq-rabbitmq-svc)
+
+* The deployment creates two services:
+
+    1. A client-facing service, to be used for client connections to the RabbitMQ cluster with port forwarding or using a LoadBalancer
+
+    2. Service discovery - a headless service for connections between the RabbitMQ nodes.
+
+* The RabbitMQ K8s application has the following ports configured:
+
+    1. ports 5671 and 5672 are enabled for communication from AMQP clients
+    2. port 4369 is enabled to allow for peer discovery
+    3. port 15672 is enabled for RabbitMQ administration over HTTP API
+    4. port 25672 is enabled as a distribution port for communication with CLI tools
+
 
 -- Open Up Access to RabbitMQ Service
 
 kubectl patch service/rabbitmq-rabbitmq-svc \
-  --namespace default \
+  --namespace gumball \
   --patch '{"spec": {"type": "LoadBalancer"}}'
 
 open http://<external-ip>:15672
@@ -222,7 +249,7 @@ Web Portal:
 open http://<external-ip>:15672
 create new transient queue named "gumball"
 
-Command Line:
+Or on Command Line:
 
 > rabbitmqadmin declare queue name=gumball durable=false
 > rabbitmqadmin list queues vhost name node messages 
@@ -232,6 +259,7 @@ Command Line:
 
 * https://cloud.google.com/kubernetes-engine/docs/troubleshooting#autofirewall
 * https://cloud.google.com/sdk/gcloud/reference/compute/firewall-rules/create
+* https://cloud.google.com/kubernetes-engine/docs/how-to/exposing-apps
 
 -- Create Firewall Rule 
 
@@ -255,11 +283,6 @@ Command Line:
    > cmpe281-to-all-vms-on-network  cmpe281  INGRESS    1000      tcp:27017         False
 
 
-## Setup GKE Namespace
-
-kubectl create -f kubernetes-namespace.yaml
-
-
 ## Setup GKE Jumpbox 
 
 * https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
@@ -274,6 +297,7 @@ apt-get install python3
 
 curl -Ls https://raw.githubusercontent.com/rabbitmq/rabbitmq-management/v3.8.3/bin/rabbitmqadmin > rabbitmqadmin
 chmod +x rabbitmqadmin
+cp rabbitmqadmin /usr/local/bin
 ln -s /usr/bin/python3 /usr/bin/python
 
 
@@ -281,30 +305,71 @@ ln -s /usr/bin/python3 /usr/bin/python
 
 kubectl exec  --namespace gumball -it jumpbox  -- /bin/bash
 
-mongo --username root --password --host 10.138.0.9
-(Temp Password: GvTWo8TRnqdi)
+mongo --username admin --password --host 10.138.0.9 cmpe281
+(Password: cmpe281)
 
-rabbitmqadmin -u rabbit -p 57DfbrYWrh1Z -H 10.81.9.66 -P 15672 list queues name node messages
-(Connect using RabbitMQ Cluster IP)
+db.gumball.find( { Id: 1 } ) ;
 
+rabbitmqadmin -u rabbit -p <password> -H <host-ip-address> -P 15672 list queues name node messages
+
+export host=10.81.11.48 
+export host=rabbitmq-rabbitmq-svc
+export passwd=TRiMxUpTscY1
+
+rabbitmqadmin -u rabbit -p $passwd -H $host -P 15672 list queues name node messages
+
+kubectl --namespace gumball get service rabbitmq-rabbitmq-svc --output yaml
+ 
 
 ## Gumball API
+
+-- Test Gumball API inside POD
+
+kubectl create -f gumball-pod.yaml
+kubectl exec  --namespace gumball -it gumball  -- /bin/bash
+kubectl logs --namespace gumball gumball
+
+curl localhost:3000/ping
+curl localhost:3000/gumball
+
+curl -X POST \
+  http://localhost:3000/order \
+  -H 'Content-Type: application/json'
+
+
+-- Deploy Gumball API Cluster
 
 kubectl create -f gumball-deployment.yaml --save-config 
 kubectl get --namespace gumball deployments
 
-kubectl exec  --namespace gumball -it <deployment-pod>  -- /bin/bash
+export pod=<gumball-pod-inside-deployment>
 
-kubectl exec  --namespace gumball -it gumball-deployment-6f7648f6b8-fsj47  -- /bin/bash
-kubectl logs --namespace gumball gumball-deployment-6f7648f6b8-fsj47
+kubectl exec  --namespace gumball -it $pod -- /bin/bash
+kubectl logs --namespace gumball $pod
     
 curl localhost:3000/ping
 curl localhost:3000/gumball
 
+curl -X POST \
+  http://localhost:3000/order \
+  -H 'Content-Type: application/json'
+
+curl -X GET \
+  http://localhost:3000/order \
+  -H 'Content-Type: application/json'
+
+curl -X POST \
+  http://localhost:3000/orders \
+  -H 'Content-Type: application/json'
+
+
+-- Deploy Gumball API Service
+
 kubectl create -f gumball-service.yaml
 kubectl get --namespace gumball services
 
-- Test Against Service Public IP
+
+-- Test Against Service IP
 
 export host=<public-id>
 
@@ -312,15 +377,15 @@ curl $host:9000/ping
 curl $host:9000/gumball
 
 curl -X POST \
-  http://$host:3000/order \
+  http://$host:9000/order \
   -H 'Content-Type: application/json'
 
 curl -X GET \
-  http://$host:3000/order \
+  http://$host:9000/order \
   -H 'Content-Type: application/json'
 
 curl -X POST \
-  http://$host:3000/orders \
+  http://$host:9000/orders \
   -H 'Content-Type: application/json'
 
 
